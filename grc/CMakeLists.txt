@@ -7,4 +7,5 @@
 #
 
 install(FILES
-    ori_omer_modulate_a.block.yml DESTINATION share/gnuradio/grc/blocks)
+    ori_omer_modulate_a.block.yml
+    ori_omer_demodulated_b.block.yml DESTINATION share/gnuradio/grc/blocks)

@@ -21,4 +21,5 @@ except ModuleNotFoundError:
 
 # import any pure python here
 from .modulate_a import modulate_a
+from .demodulated_b import demodulated_b
 #
