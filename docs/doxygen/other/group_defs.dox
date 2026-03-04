@@ -1,0 +1,6 @@
+/*!
+ * \defgroup block GNU Radio ORI_OMER C++ Signal Processing Blocks
+ * \brief All C++ blocks that can be used from the ORI_OMER GNU Radio
+ *        module are listed here or in the subcategories below.
+ *
+ */
