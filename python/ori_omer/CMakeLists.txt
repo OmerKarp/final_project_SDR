@@ -19,7 +19,7 @@ add_subdirectory(bindings)
 ########################################################################
 # Install python sources
 ########################################################################
-gr_python_install(FILES __init__.py DESTINATION ${GR_PYTHON_DIR}/gnuradio/ori_omer)
+gr_python_install(FILES __init__.py modulate_a.py DESTINATION ${GR_PYTHON_DIR}/gnuradio/ori_omer)
 
 ########################################################################
 # Handle the unit tests

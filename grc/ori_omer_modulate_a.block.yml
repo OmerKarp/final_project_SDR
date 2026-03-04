@@ -13,13 +13,18 @@ templates:
 #     * dtype (e.g. int, float, complex, byte, short, xxx_vector, ...)
 #     * default
 parameters:
-- id: parametername_replace_me
-  label: FIX ME:
+- id: t
+  label: time
+  dtype: float
+  default: 1.0
+- id: fs
+  label: sample_frequency
+  dtype: float
+  default: 1000
+- id: msg
+  label: the_msg
   dtype: string
-  default: You need to fill in your grc/ori_omer_modulate_a.block.yaml
-#- id: ...
-#  label: ...
-#  dtype: ...
+  default: "hi ori"
 
 #  Make one 'inputs' list entry per input and one 'outputs' list entry per output.
 #  Keys include:
@@ -28,7 +33,7 @@ parameters:
 #      * dtype (e.g. int, float, complex, byte, short, xxx_vector, ...)
 #      * vlen (optional - data stream vector length. Default is 1)
 #      * optional (optional - set to 1 for optional inputs. Default is 0)
-inputs:
+# inputs:
 #- label: ...
 #  domain: ...
 #  dtype: ...
@@ -36,11 +41,8 @@ inputs:
 #  optional: ...
 
 outputs:
-#- label: ...
-#  domain: ...
-#  dtype: ...
-#  vlen: ...
-#  optional: ...
+- label: pwd_sig
+  dtype: float
 
 #  'file_format' specifies the version of the GRC yml format used in the file
 #  and should usually not be changed.
