@@ -14,8 +14,8 @@ sensitivity = 0.3
 start_inx = np.argmin(diff > (2-sensitivity)) # [0 0 0 0 1 0 0 1]
 
 # [2.1 0.2 -1.8 2.3]
-diff = diff[start_inx:] # cut off the start
-diff = diff.reshape((-1, self.SPS))
+in0 = in0[start_inx:] # cut off the start
+in0 = in0.reshape((-1, self.SPS))
 [1 2 3
  4 5 6]
 
@@ -24,6 +24,9 @@ voltage_averages = np.average(diff)
  5]
 
 diff = diff.reshape((1,-1))
+# [2 5]
 
-diff(diff > 0.2) = 1
-diff(diff < -0.2) = 0
+
+-1 [XXX      0      YYY] 1
+diff(diff > 0.25) = 1
+diff(diff < -0.25) = 0
