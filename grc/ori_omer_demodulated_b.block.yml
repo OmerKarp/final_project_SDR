@@ -13,13 +13,22 @@ templates:
 #     * dtype (e.g. int, float, complex, byte, short, xxx_vector, ...)
 #     * default
 parameters:
-- id: parametername_replace_me
-  label: FIX ME:
-  dtype: string
-  default: You need to fill in your grc/ori_omer_demodulated_b.block.yaml
-#- id: ...
-#  label: ...
-#  dtype: ...
+- id: t
+  label: time
+  dtype: float
+  default: 1.0
+- id: fs
+  label: sample_frequency
+  dtype: float
+  default: 1000
+- id: sens
+  label: sensitivity
+  dtype: float
+  default: 1
+- id: timeout_seconds
+  label: timeout_seconds
+  dtype: float
+  default: 3
 
 #  Make one 'inputs' list entry per input and one 'outputs' list entry per output.
 #  Keys include:
@@ -29,13 +38,10 @@ parameters:
 #      * vlen (optional - data stream vector length. Default is 1)
 #      * optional (optional - set to 1 for optional inputs. Default is 0)
 inputs:
-#- label: ...
-#  domain: ...
-#  dtype: ...
-#  vlen: ...
-#  optional: ...
+- label: in0
+  dtype: float
 
-outputs:
+# outputs:
 #- label: ...
 #  domain: ...
 #  dtype: ...

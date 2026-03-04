@@ -62,7 +62,7 @@ blocks:
     bus_structure: null
     coordinate: [688, 344.0]
     rotation: 0
-    state: enabled
+    state: disabled
 - name: blocks_throttle2_0
   id: blocks_throttle2
   parameters:
@@ -84,6 +84,23 @@ blocks:
     coordinate: [504, 248.0]
     rotation: 0
     state: enabled
+- name: ori_omer_demodulated_b_0
+  id: ori_omer_demodulated_b
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: ''
+    fs: '1000'
+    sens: '1'
+    t: '1.0'
+    timeout_seconds: '3'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [680, 112.0]
+    rotation: 0
+    state: enabled
 - name: ori_omer_modulate_a_0
   id: ori_omer_modulate_a
   parameters:
@@ -94,7 +111,7 @@ blocks:
     maxoutbuf: '0'
     minoutbuf: '0'
     msg: hi ori
-    t: '0.1'
+    t: '1'
   states:
     bus_sink: false
     bus_source: false
@@ -198,11 +215,10 @@ blocks:
     bus_structure: null
     coordinate: [696, 240.0]
     rotation: 0
-    state: enabled
+    state: disabled
 
 connections:
-- [blocks_throttle2_0, '0', blocks_file_sink_0, '0']
-- [blocks_throttle2_0, '0', qtgui_time_sink_x_0, '0']
+- [blocks_throttle2_0, '0', ori_omer_demodulated_b_0, '0']
 - [ori_omer_modulate_a_0, '0', blocks_throttle2_0, '0']
 
 metadata:

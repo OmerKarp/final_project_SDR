@@ -6,10 +6,8 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 
-
 import numpy as np
 from gnuradio import gr
-from collections import deque
 
 class demodulated_b(gr.sync_block):
     """
@@ -24,102 +22,86 @@ class demodulated_b(gr.sync_block):
         self._fs=fs
         self._sens = sens
 
-        self._SPS = 3*fs*t        # <number of samples per second> * <time that a 1/3 symbol is transmitted>
-        self._preabmle_number_of_samples = fs*t   # the preabmle is only t and not 3t time units
+        self._SPS = int(3*fs*t)     # <number of samples per second> * <time that a 1/3 symbol is transmitted>
 
         self._num_of_noise_samples = 0
         self._is_listening = False
         self._num_of_noise_samples_threshold = fs*timeout_seconds
+        print("initialized demod block!")
 
     def work(self, input_items, output_items):
         in0 = input_items[0]
+        print(in0, np.size(in0))
 
-        diff = np.diff(in0)
-        # [-1 11-1 1-1-1] -> [2 0 -2 2 -2 0]
-        # 2 Represents the beginning of a bit, the location of -2 marks if it's 0 or 1
-        # 2 -2 0 -> 0
-        # 2 0 -2 -> 1
+        if not self._is_listening:
+            # Find the preamble
 
-        # demodulated_data = 
-        # bit_starting_indexes = diff(diff > (2-self._sens))
-        # drop_indexes = (diff(diff < -(2-self._sens)))  
+            # [-1   1 1-1   1-1-1] -> [2 0 -2   2 -2 0]
+            # 2 Represents the beginning of a bit, the location of -2 marks if it's 0 or 1
+            # [2 -2 0] -> 0
+            # [2 0 -2] -> 1
+            diff = np.diff(in0)
 
-        bits_avg_diff = 0.6
+            diff_above_threshold = diff > (2-self._sens) # [0 0 0 0 1 0 0 0 1 0 1]
+            start_index = np.argmax(diff_above_threshold)
 
-        # Find the preamble
-        start_inx = np.argmax(diff > (2-sensitivity)) # [0 0 0 0 1 0 0 0 1 0 1]
+            # we need to check if the value in that start_index is acually valid
+            # it can be invalid if we only got noise then diff_above_threshold = [0 0 0 ...]
+            if diff[start_index] > (2-self._sens):
+                # we indeed found a preample!
+                print("the diff was", diff[start_index], ", index = ", start_index)
+                self._is_listening = True
+                in0 = in0[start_index+1:]
 
-        if self._is_listening == True:
-            voltages = in0[start_inx:] # Cut off the preamble
-            voltages = voltages.reshape((-1, self.SPS)) # Create a matrix where each row represents a signle bit
+            else:
+                print("no preample was found...")
+                return len(input_items[0]) # $ IS THIS CORRECT? or "return 0"
+
+        if self._is_listening: # listening!
+            # padding 0's if needed for the reshape in the next step
+            in0 = np.concatenate((in0, np.zeros(np.mod(self._SPS - len(in0), self._SPS))))
+            print("SPS = ", self._SPS)
+            print(in0, np.size(in0))
+
+            # [1 2 3 4 5 6] ->
+            # [1 2 3
+            #  4 5 6]
+            voltages = in0.reshape((-1, self._SPS)) # Create a matrix where each row represents a signle bit
+            print("voltage_averages = ", voltages)
+            print(np.unique(voltages[0,:], return_counts=True))
+            print(np.unique(voltages, return_counts=True))
+            print(np.unique(voltages, return_counts=True, axis=0))
+
             # Calculate the voltage averages and demodulate the data
-            voltage_averages = np.average(voltages)
-            voltage_averages = voltage_averages.reshape((1,-1))
-            voltage_averages(voltage_averages > 0.25) = 1 
+            # [2 5]
+            voltage_averages = np.average(voltages, axis=1)
+            print("voltage_averages = ", voltage_averages)
+            demodulated_msg = -1*np.ones(np.size(voltage_averages))
+            print("demodulated_msg -> ", demodulated_msg)
+
+            # [2 5]
+            # voltage_averages = voltage_averages.reshape((1,-1))
+            # print("voltage_averages = ", voltage_averages)
+
             # voltage_averages = [0.27 0.31 -0.33 -0.27 0.1 -0.7]
-            voltage_averages(voltage_averages < -0.25) = 0
+            one_indexes = (voltage_averages > 0.25)
+            zero_indexes = (voltage_averages < -0.25)
+            print("one_indexes = ", one_indexes)
+            print("zero_indexes = ", zero_indexes)
+            print("demodulated_msg[one_indexes] -> ", demodulated_msg[one_indexes])
+            demodulated_msg[one_indexes] = 1
+            demodulated_msg[zero_indexes] = 0
+
+            # now we check how many noise samples we got
             self._num_of_noise_samples += sum(np.abs(voltage_averages) < 0.25) 
             if self._num_of_noise_samples > self._num_of_noise_samples_threshold:
                 self._is_listening = False
                 self._num_of_noise_samples = 0
+
+            out_str = ""
+            for i in range(0, len(demodulated_msg), 8):
+                x = demodulated_msg[i, i+8]
+                l=''.join([str(j) for j in x[::-1]])
+                out_str += chr(int(("0b"+l), base=2))
             
-            
-
-
-
-# [1 1 -1] -> 0.3
-# [1 -1 -1] -> -0.3
-# avg with only noise~0
-
-# 0.6 diff
-
-# self.preamble_length = int(fs*t)
-# self.SPS = int(3*fs*t)
-
-
-sensitivity = 0.3
-# [0.2 0.4 1 -0.3 2.1 0.2 -1.8 2.3]
-start_inx = np.argmin(diff > (2-sensitivity)) # [0 0 0 0 1 0 0 1]
-
-# [2.1 0.2 -1.8 2.3]
-diff = diff[start_inx:] # cut off the start
-diff = diff.reshape((-1, self.SPS))
-[1 2 3
- 4 5 6]
-
-voltage_averages = np.average(diff)
-[ 2
- 5]
-
-diff = diff.reshape((1,-1))
-
-diff(diff > 0.2) = 1
-diff(diff < -0.2) = 0
-
-
-
-
-
-
-
-
-
-        # for amplitude_index, amplitude in enumerate(diff):
-        #     if amplitude == self._sens:
-
-        #     current = diff[amplitude_index, amplitude_index + self._SPS]
-        #     if amplitude_index + a.index(-1*self._sens) == self._fs*self._t:
-        #         np.append(demodulated_data, 0)
-        #         current_waiting_time = 0
-        #         amplitude_index += a.index(-1*self._sens)
-        #     elif amplitude_index + a.index(-1*self._sens) == 2*self._fs*self._t:
-        #         np.append(demodulated_data, 1)
-        #         current_waiting_time = 0
-        #         amplitude_index += a.index(-1*self._sens)
-        #     else:
-        #         waiting_time += 1/self._fs
-                
-
-        # return len(input_items[0])
-
-
+            print(out_str)
