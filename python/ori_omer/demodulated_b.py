@@ -8,6 +8,7 @@
 
 import numpy as np
 from gnuradio import gr
+from collections import deque
 
 class demodulated_b(gr.sync_block):
     """
@@ -27,7 +28,9 @@ class demodulated_b(gr.sync_block):
         self._num_of_noise_samples = 0
         self._is_listening = False
         self._num_of_noise_samples_threshold = fs*timeout_seconds
-        print("initialized demod block!")
+
+        self._decoded_bits = deque()
+        # print("initialized demod block!")
 
     def work(self, input_items, output_items):
         in0 = input_items[0]
@@ -67,7 +70,7 @@ class demodulated_b(gr.sync_block):
             # [1 2 3
             #  4 5 6]
             voltages = in0.reshape((-1, self._SPS)) # Create a matrix where each row represents a signle bit
-            print("voltage_averages = ", voltages)
+            # print("voltage_averages = ", voltages)
             print(np.unique(voltages[0,:], return_counts=True))
             print(np.unique(voltages, return_counts=True))
             print(np.unique(voltages, return_counts=True, axis=0))
@@ -84,24 +87,36 @@ class demodulated_b(gr.sync_block):
             # print("voltage_averages = ", voltage_averages)
 
             # voltage_averages = [0.27 0.31 -0.33 -0.27 0.1 -0.7]
-            one_indexes = (voltage_averages > 0.25)
-            zero_indexes = (voltage_averages < -0.25)
+            one_indexes = np.array(voltage_averages > 0.25)
+            zero_indexes = np.array(voltage_averages < -0.25)
+            noise_indexes = np.array(np.abs(voltage_averages) < 0.25)
             print("one_indexes = ", one_indexes)
             print("zero_indexes = ", zero_indexes)
-            print("demodulated_msg[one_indexes] -> ", demodulated_msg[one_indexes])
             demodulated_msg[one_indexes] = 1
             demodulated_msg[zero_indexes] = 0
+            print("demodulated_msg -> ", demodulated_msg)
+
+            start_of_noise_index = np.argmax(noise_indexes)
+            if np.abs(voltage_averages[start_of_noise_index]) < 0.25:
+                # there is noise...
+                print("the noise starts at index = ", start_of_noise_index)
+                demodulated_msg = demodulated_msg[:start_of_noise_index]
+                print("demodulated_msg -> ", demodulated_msg)
 
             # now we check how many noise samples we got
-            self._num_of_noise_samples += sum(np.abs(voltage_averages) < 0.25) 
+            self._num_of_noise_samples += sum(noise_indexes) 
             if self._num_of_noise_samples > self._num_of_noise_samples_threshold:
                 self._is_listening = False
                 self._num_of_noise_samples = 0
 
-            out_str = ""
-            for i in range(0, len(demodulated_msg), 8):
-                x = demodulated_msg[i, i+8]
-                l=''.join([str(j) for j in x[::-1]])
-                out_str += chr(int(("0b"+l), base=2))
-            
-            print(out_str)
+            self._decoded_bits.extend(demodulated_msg.astype(int)) # add the decoded bits to a queue
+            print("new queue ->", self._decoded_bits)
+            while len(self._decoded_bits) >= 8:        # prints a char if there are more than 8 bits in the queue
+                x = np.zeros(8, dtype=int)
+                for i in range(8):
+                    x[i] = int(self._decoded_bits.popleft())
+                print("x -> ", x)
+
+                binary_str =''.join(map(str,x))
+                # print("binary_str = ", binary_str, "int(binary_str) = ", int(binary_str, 2))
+                print(chr(int(binary_str, 2)))
