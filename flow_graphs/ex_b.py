@@ -66,7 +66,7 @@ class ex_b(gr.top_block, Qt.QWidget):
         # Blocks
         ##################################################
 
-        self.ori_omer_modulate_a_0 = ori_omer.modulate_a(time, samp_rate, 'hi u')
+        self.ori_omer_modulate_a_0 = ori_omer.modulate_a(time, samp_rate, 'hi omer')
         self.ori_omer_demodulated_b_0 = ori_omer.demodulated_b(time, samp_rate, 1, 3)
         self.blocks_throttle2_0 = blocks.throttle( gr.sizeof_float*1, samp_rate, True, 0 if "auto" == "auto" else max( int(float(0.1) * samp_rate) if "auto" == "time" else int(0.1), 1) )
 

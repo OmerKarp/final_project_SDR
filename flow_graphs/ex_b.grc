@@ -104,7 +104,7 @@ blocks:
     fs: samp_rate
     maxoutbuf: '0'
     minoutbuf: '0'
-    msg: hi u
+    msg: hi omer
     t: time
   states:
     bus_sink: false
