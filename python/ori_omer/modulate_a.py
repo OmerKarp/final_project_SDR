@@ -33,7 +33,7 @@ class modulate_a(gr.sync_block):
 
         self._modulated_zero = np.concatenate((np.ones(int(self._SPS/3)), -1*np.ones(int(self._SPS * 2/3))))
         self._modulated_one = np.concatenate((np.ones(int(self._SPS * 2/3)), -1*np.ones(int(self._SPS/3))))
-        self._preamble = -10*np.ones(int(self._preabmle_number_of_samples))
+        self._preamble = -1*np.ones(int(self._preabmle_number_of_samples))
         # print("0 -> ", self._modulated_zero, "size = ", np.size(self._modulated_zero))
         # print("1 -> ", self._modulated_one, "size = ", np.size(self._modulated_one))
         # print("preamble ->", self._preamble, "size = ", np.size(self._preamble))
@@ -73,5 +73,5 @@ class modulate_a(gr.sync_block):
             self._queue.extend(modulated_msg) # continue
         else:
             self._queue.extend(self._preamble) # also send the preabmle
-            print("added a preamble!")
+            # print("added a preamble!")
             self._queue.extend(modulated_msg)
