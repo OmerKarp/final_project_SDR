@@ -127,10 +127,8 @@ class demodulated_b(gr.sync_block):
 
             # now we check how many noise samples we got $ look if we need to fix
             self._num_of_noise_bits += sum(noise_indexes)
-            print(np.abs(voltage_averages))
-            print(np.abs(voltage_averages) < 0.25)
-            print("noise_indexes = ", noise_indexes)
-            print(f"noise samples = {self._num_of_noise_bits} / {self._num_of_noise_bits_threshold}")
+            # print("noise_indexes = ", noise_indexes)
+            # print(f"noise samples = {self._num_of_noise_bits} / {self._num_of_noise_bits_threshold}")
             if self._num_of_noise_bits >= self._num_of_noise_bits_threshold:
                 self._is_listening = False
                 self._num_of_noise_bits = 0
