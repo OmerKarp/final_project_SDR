@@ -10,6 +10,7 @@ import numpy as np
 from gnuradio import gr
 from collections import deque
 from scipy import signal
+from scipy.signal import find_peaks
 
 class demodulated_b(gr.sync_block):
     """
@@ -25,7 +26,8 @@ class demodulated_b(gr.sync_block):
         self._sens = sens
 
         self._SPS = int(3*fs*t)     # <number of samples per second> * <time that a 1/3 symbol is transmitted>
-        self._preamble_voltages = -1 * np.ones(int(fs*t))
+        self._preamble_number_of_samples = int(t*fs)
+        self._preamble_voltages = -1 * np.ones(self._preamble_number_of_samples)
 
         self._num_of_noise_bits = 0
         self._is_listening = False
@@ -37,24 +39,33 @@ class demodulated_b(gr.sync_block):
 
     def work(self, input_items, output_items):
         in0 = input_items[0]
+        print("(+) in0 length", len(in0))
         if not self.is_input_size_valid(in0):
+            print("(-) ERROR: input length is less than 1", len(in0))
             return len(input_items[0])
 
         # If not listening, search for the preabmle
         if not self._is_listening:
-            preable_end_index = self.find_preabmle(in0)
+            # we chache the data until we have more than fs*t samples to do correlation with
+            samples = self.update_buffer_with_preamble(in0)
+            if len(samples) == 0:
+                # print(f"(-) Waiting for more samples for doing correlation, {self._samples_buffer_last_index} / {int(self._t * self._fs)}")
+                return len(input_items[0])
+
+            preable_end_index = self.find_preabmle(samples)
             if preable_end_index == -1:
                 return len(input_items[0])
             
             self._is_listening = True
-            in0 = in0[preable_end_index+1:]
+            self._samples_buffer_last_index = 0 # don't need to store preamble parts anymore
+            in0 = samples[preable_end_index+1:]
 
         # If listening, precess the data until only noise is found for timeout_seconds
         if self._is_listening:
             working_samples = self.use_and_update_samples_buffer(in0)
             
             if len(working_samples) == 0: # if all the samples went to the buffer, don't process
-                print(f"(-) We need more samples for a bit, {self._samples_buffer_last_index} / {self._SPS}")
+                # print(f"(-) We need more samples for a bit, {self._samples_buffer_last_index} / {self._SPS}")
                 return len(input_items[0])
             
             demodulated_msg, number_of_noisy_bits = self.convert_samples_to_bits(working_samples)
@@ -72,31 +83,51 @@ class demodulated_b(gr.sync_block):
         
     ######################## HELPER FUNCTIONS ########################
 
-    def is_input_size_valid(self, input):
+    def is_input_size_valid(self, in0):
         """
-        checks if the size of the input is bigger than 1
+        checks if the size of the in0 is bigger than 1
         """
-        if len(input) < 1:
-            print("(-) ERROR: input length is less than 1", len(input))
+        if len(in0) < 1:
             return False
         return True
     
+    def update_buffer_with_preamble(self, in0):
+        samples = np.concatenate((self._samples_buffer[0:self._samples_buffer_last_index], in0)) # adds the old buffer to the start
+        total_number_of_samples = len(samples)
+
+        if total_number_of_samples >= self._preamble_number_of_samples:
+            self._samples_buffer_last_index = self._preamble_number_of_samples      # full size
+            self._samples_buffer[0 : self._samples_buffer_last_index] = samples[-self._preamble_number_of_samples:]   # save the last X samples, that X is the size of the preamble
+        else:
+            # append to the buffer the new samples
+            self._samples_buffer_last_index = len(samples)
+            self._samples_buffer[0 : self._samples_buffer_last_index] = samples
+            return np.array([])
+        
+        return samples
+
     def find_preabmle(self, in0):
         """
         finds the preabmle using correlation
         """
         corr = signal.correlate(in0, self._preamble_voltages)
         corr = np.round(corr, 2)
-        preamble_end_index = np.argmax(corr)
+        print("corr", corr)
+
+        max_possible_corr = self._fs * self._t
+        threshold = max_possible_corr * self._sens
+
+        peaks, _ = find_peaks(corr, distance=self._SPS/2, height=threshold)
 
         # check if there was acually a preamble
-        if corr[preamble_end_index] < (self._fs * self._t * self._sens):
-            print("(-) Only Noise was found, max corr = ", corr[preamble_end_index], " at index = ", preamble_end_index)
+        if len(peaks) == 0:
+            print("(-) Only Noise was found")
             return -1
-        else:
-            print("(+) Preable was found with max corr = ", corr[preamble_end_index], " at index = ", preamble_end_index)
-            return preamble_end_index
-        
+
+        preamble_end_index = peaks[0]
+        print("(+) Preable was found with max corr = ", corr[preamble_end_index], " at index = ", preamble_end_index)
+        return preamble_end_index
+
     def use_and_update_samples_buffer(self, in0):
         """
         use the in-memory buffer to get old leftover samples and cache the new leftover samples
@@ -124,21 +155,23 @@ class demodulated_b(gr.sync_block):
 
         # Calculate the voltage averages and demodulate the data
         voltage_averages = np.average(voltages, axis=1)
+        print("(+) voltage_averages = ", voltage_averages)
 
         null_value = -1
         demodulated_msg = null_value*np.ones(np.size(voltage_averages))
 
+        detected_bit_threshold = 0.1
         # example: voltage_averages = [0.27 0.31 -0.33 -0.27 0.1 -0.7]
-        one_indexes = np.array(voltage_averages > 0.25)           # [0 1 0 0 0]
-        zero_indexes = np.array(voltage_averages < -0.25)         # [1 0 0 0 0]
-        noise_indexes = np.array(np.abs(voltage_averages) < 0.25) # [0 0 1 1 1]
+        one_indexes = np.array(voltage_averages > detected_bit_threshold)           # [0 1 0 0 0]
+        zero_indexes = np.array(voltage_averages < -detected_bit_threshold)         # [1 0 0 0 0]
+        noise_indexes = np.array(np.abs(voltage_averages) < detected_bit_threshold) # [0 0 1 1 1]
 
         # should set the 1's and 0's, and the noise should stay at -1, example: [0 1 1 0 0 1 0 -1 -1 -1 -1 -1 -1]
         demodulated_msg[one_indexes] = 1
         demodulated_msg[zero_indexes] = 0
 
-        start_of_noise_index = np.argmax(noise_indexes)                 # get the first index of noise
-        if np.abs(voltage_averages[start_of_noise_index]) < 0.25:       # check if we really found noise
+        start_of_noise_index = np.argmax(noise_indexes)                                 # get the first index of noise
+        if np.abs(voltage_averages[start_of_noise_index]) < detected_bit_threshold:     # check if we really found noise
             print("the noise starts at index = ", start_of_noise_index)
             demodulated_msg = demodulated_msg[:start_of_noise_index]
             # now we don't have the -1's, example: example: [0 1 1 0 0 1 0]
