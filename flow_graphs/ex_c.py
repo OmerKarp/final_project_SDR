@@ -73,6 +73,7 @@ class ex_c(gr.top_block, Qt.QWidget):
         self.blocks_multiply_const_vxx_0 = blocks.multiply_const_ff(4)
         self.blocks_file_sink_0_0 = blocks.file_sink(gr.sizeof_float*1, '/home/sdr/final_project_SDR/gr-ori_omer/flow_graphs/temp_output.txt', False)
         self.blocks_file_sink_0_0.set_unbuffered(False)
+        self.blocks_add_xx_0 = blocks.add_vcc(1)
         self.analog_wfm_tx_0 = analog.wfm_tx(
         	audio_rate=int(samp_rate),
         	quad_rate=(int(samp_rate*4)),
@@ -84,13 +85,16 @@ class ex_c(gr.top_block, Qt.QWidget):
         	quad_rate=(int(samp_rate*4)),
         	audio_decimation=4,
         )
+        self.analog_noise_source_x_0 = analog.noise_source_c(analog.GR_GAUSSIAN, 10, 0)
 
 
         ##################################################
         # Connections
         ##################################################
+        self.connect((self.analog_noise_source_x_0, 0), (self.blocks_add_xx_0, 1))
         self.connect((self.analog_wfm_rcv_0, 0), (self.blocks_multiply_const_vxx_0, 0))
-        self.connect((self.analog_wfm_tx_0, 0), (self.analog_wfm_rcv_0, 0))
+        self.connect((self.analog_wfm_tx_0, 0), (self.blocks_add_xx_0, 0))
+        self.connect((self.blocks_add_xx_0, 0), (self.analog_wfm_rcv_0, 0))
         self.connect((self.blocks_multiply_const_vxx_0, 0), (self.blocks_file_sink_0_0, 0))
         self.connect((self.blocks_multiply_const_vxx_0, 0), (self.ori_omer_demodulated_b_0, 0))
         self.connect((self.blocks_throttle2_0, 0), (self.analog_wfm_tx_0, 0))
