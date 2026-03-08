@@ -21,7 +21,6 @@ from argparse import ArgumentParser
 from gnuradio.eng_arg import eng_float, intx
 from gnuradio import eng_notation
 from gnuradio import ori_omer
-import sip
 
 
 
@@ -67,65 +66,19 @@ class ex_b(gr.top_block, Qt.QWidget):
         # Blocks
         ##################################################
 
-        self.qtgui_time_sink_x_0 = qtgui.time_sink_f(
-            (samp_rate*10), #size
-            samp_rate, #samp_rate
-            "", #name
-            1, #number of inputs
-            None # parent
-        )
-        self.qtgui_time_sink_x_0.set_update_time(0.10)
-        self.qtgui_time_sink_x_0.set_y_axis(-1, 1)
-
-        self.qtgui_time_sink_x_0.set_y_label('Amplitude', "")
-
-        self.qtgui_time_sink_x_0.enable_tags(True)
-        self.qtgui_time_sink_x_0.set_trigger_mode(qtgui.TRIG_MODE_NORM, qtgui.TRIG_SLOPE_NEG, 0.0, 0, 0, "")
-        self.qtgui_time_sink_x_0.enable_autoscale(False)
-        self.qtgui_time_sink_x_0.enable_grid(False)
-        self.qtgui_time_sink_x_0.enable_axis_labels(True)
-        self.qtgui_time_sink_x_0.enable_control_panel(False)
-        self.qtgui_time_sink_x_0.enable_stem_plot(False)
-
-
-        labels = ['Signal 1', 'Signal 2', 'Signal 3', 'Signal 4', 'Signal 5',
-            'Signal 6', 'Signal 7', 'Signal 8', 'Signal 9', 'Signal 10']
-        widths = [1, 1, 1, 1, 1,
-            1, 1, 1, 1, 1]
-        colors = ['blue', 'red', 'green', 'black', 'cyan',
-            'magenta', 'yellow', 'dark red', 'dark green', 'dark blue']
-        alphas = [1.0, 1.0, 1.0, 1.0, 1.0,
-            1.0, 1.0, 1.0, 1.0, 1.0]
-        styles = [1, 1, 1, 1, 1,
-            1, 1, 1, 1, 1]
-        markers = [-1, -1, -1, -1, -1,
-            -1, -1, -1, -1, -1]
-
-
-        for i in range(1):
-            if len(labels[i]) == 0:
-                self.qtgui_time_sink_x_0.set_line_label(i, "Data {0}".format(i))
-            else:
-                self.qtgui_time_sink_x_0.set_line_label(i, labels[i])
-            self.qtgui_time_sink_x_0.set_line_width(i, widths[i])
-            self.qtgui_time_sink_x_0.set_line_color(i, colors[i])
-            self.qtgui_time_sink_x_0.set_line_style(i, styles[i])
-            self.qtgui_time_sink_x_0.set_line_marker(i, markers[i])
-            self.qtgui_time_sink_x_0.set_line_alpha(i, alphas[i])
-
-        self._qtgui_time_sink_x_0_win = sip.wrapinstance(self.qtgui_time_sink_x_0.qwidget(), Qt.QWidget)
-        self.top_layout.addWidget(self._qtgui_time_sink_x_0_win)
         self.ori_omer_modulate_a_0 = ori_omer.modulate_a(time, samp_rate, 'hi omer')
-        self.ori_omer_demodulated_b_0 = ori_omer.demodulated_b(time, samp_rate, 1, 3)
+        self.ori_omer_demodulated_b_0 = ori_omer.demodulated_b(time, samp_rate, 0.8, 1)
         self.blocks_throttle2_0 = blocks.throttle( gr.sizeof_float*1, samp_rate, True, 0 if "auto" == "auto" else max( int(float(0.1) * samp_rate) if "auto" == "time" else int(0.1), 1) )
+        self.blocks_file_sink_0 = blocks.file_sink(gr.sizeof_float*1, '/home/sdr/final_project_SDR/gr-ori_omer/flow_graphs/temp_output.txt', False)
+        self.blocks_file_sink_0.set_unbuffered(False)
 
 
         ##################################################
         # Connections
         ##################################################
+        self.connect((self.blocks_throttle2_0, 0), (self.blocks_file_sink_0, 0))
         self.connect((self.blocks_throttle2_0, 0), (self.ori_omer_demodulated_b_0, 0))
         self.connect((self.ori_omer_modulate_a_0, 0), (self.blocks_throttle2_0, 0))
-        self.connect((self.ori_omer_modulate_a_0, 0), (self.qtgui_time_sink_x_0, 0))
 
 
     def closeEvent(self, event):
@@ -148,7 +101,6 @@ class ex_b(gr.top_block, Qt.QWidget):
     def set_samp_rate(self, samp_rate):
         self.samp_rate = samp_rate
         self.blocks_throttle2_0.set_sample_rate(self.samp_rate)
-        self.qtgui_time_sink_x_0.set_samp_rate(self.samp_rate)
 
 
 
