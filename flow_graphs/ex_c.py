@@ -22,7 +22,6 @@ from argparse import ArgumentParser
 from gnuradio.eng_arg import eng_float, intx
 from gnuradio import eng_notation
 from gnuradio import ori_omer
-from math import pi
 
 
 
@@ -61,14 +60,14 @@ class ex_c(gr.top_block, Qt.QWidget):
         ##################################################
         # Variables
         ##################################################
-        self.time = time = 0.1
+        self.time = time = 0.01
         self.samp_rate = samp_rate = 32e3
 
         ##################################################
         # Blocks
         ##################################################
 
-        self.ori_omer_modulate_a_0 = ori_omer.modulate_a(time, samp_rate, 'hi omer')
+        self.ori_omer_modulate_a_0 = ori_omer.modulate_a(time, samp_rate, 'hi omer this is ori')
         self.ori_omer_demodulated_b_0 = ori_omer.demodulated_b(time, samp_rate, 0.3, 1)
         self.blocks_throttle2_0 = blocks.throttle( gr.sizeof_float*1, samp_rate, True, 0 if "auto" == "auto" else max( int(float(0.1) * samp_rate) if "auto" == "time" else int(0.1), 1) )
         self.blocks_multiply_const_vxx_0 = blocks.multiply_const_ff(4)
@@ -78,7 +77,7 @@ class ex_c(gr.top_block, Qt.QWidget):
         	audio_rate=int(samp_rate),
         	quad_rate=(int(samp_rate*4)),
         	tau=(75e-6),
-        	max_dev=75e3,
+        	max_dev=16e3,
         	fh=(-1.0),
         )
         self.analog_wfm_rcv_0 = analog.wfm_rcv(

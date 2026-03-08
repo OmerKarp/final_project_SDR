@@ -49,7 +49,7 @@ blocks:
   id: variable
   parameters:
     comment: ''
-    value: '0.1'
+    value: '0.01'
   states:
     bus_sink: false
     bus_source: false
@@ -82,7 +82,7 @@ blocks:
     audio_rate: int(samp_rate)
     comment: ''
     fh: '-1.0'
-    max_dev: 75e3
+    max_dev: 16e3
     maxoutbuf: '0'
     minoutbuf: '0'
     quad_rate: int(samp_rate*4)
@@ -151,19 +151,6 @@ blocks:
     coordinate: [264, 152.0]
     rotation: 0
     state: enabled
-- name: import_0
-  id: import
-  parameters:
-    alias: ''
-    comment: ''
-    imports: from math import pi
-  states:
-    bus_sink: false
-    bus_source: false
-    bus_structure: null
-    coordinate: [376, 24.0]
-    rotation: 0
-    state: enabled
 - name: ori_omer_demodulated_b_0
   id: ori_omer_demodulated_b
   parameters:
@@ -190,7 +177,7 @@ blocks:
     fs: samp_rate
     maxoutbuf: '0'
     minoutbuf: '0'
-    msg: hi omer
+    msg: hi omer this is ori
     t: time
   states:
     bus_sink: false

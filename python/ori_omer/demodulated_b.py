@@ -39,7 +39,7 @@ class demodulated_b(gr.sync_block):
 
     def work(self, input_items, output_items):
         in0 = input_items[0]
-        print("(+) in0 length", len(in0))
+        # print("(+) in0 length", len(in0))
         if not self.is_input_size_valid(in0):
             print("(-) ERROR: input length is less than 1", len(in0))
             return len(input_items[0])
@@ -155,12 +155,12 @@ class demodulated_b(gr.sync_block):
 
         # Calculate the voltage averages and demodulate the data
         voltage_averages = np.average(voltages, axis=1)
-        print("(+) voltage_averages = ", voltage_averages)
+        # print("(+) voltage_averages = ", voltage_averages)
 
         null_value = -1
         demodulated_msg = null_value*np.ones(np.size(voltage_averages))
 
-        detected_bit_threshold = 0.1
+        detected_bit_threshold = 0.15
         # example: voltage_averages = [0.27 0.31 -0.33 -0.27 0.1 -0.7]
         one_indexes = np.array(voltage_averages > detected_bit_threshold)           # [0 1 0 0 0]
         zero_indexes = np.array(voltage_averages < -detected_bit_threshold)         # [1 0 0 0 0]

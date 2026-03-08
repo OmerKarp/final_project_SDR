@@ -22,7 +22,7 @@ if len(peaks) > 0:
     print("preamble ends at", peaks[0])
 
 plt.figure()
-# plt.plot(corr, label='signal')
-# plt.plot(peaks, corr[peaks], "x", color = 'r', label='detected_peaks')
-plt.plot(vec)
+plt.plot(corr, label='signal')
+plt.plot(peaks, corr[peaks], "x", color = 'r', label='detected_peaks')
+# plt.plot(vec)
 plt.show()
