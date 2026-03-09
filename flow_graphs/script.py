@@ -6,23 +6,22 @@ from scipy.io.wavfile import read
 
 # file_path = "/home/sdr/final_project_SDR/gr-ori_omer/flow_graphs/temp_output.txt"
 
-# file_path = "/home/sdr/final_project_SDR/gr-ori_omer/flow_graphs/temp_moded.txt"
+file_path = "/home/sdr/final_project_SDR/flow_graphs/temp_moded.txt"
 
-
-file_path = "/home/sdr/final_project_SDR/gr-ori_omer/flow_graphs/audio_file.wav"
+# file_path = "/home/sdr/final_project_SDR/gr-ori_omer/flow_graphs/audio_file.wav"
 
 fs = 32000
 t = 0.01
 
-samp_rate, data = read(file_path)
+# samp_rate, data = read(file_path)
 
-if len(data.shape) > 1:
-    data = data[:, 0]
+# if len(data.shape) > 1:
+    # data = data[:, 0]
 
-time = np.arange(len(data)) / samp_rate
+# time = np.arange(len(data)) / samp_rate
 
-# with open(file_path, "rb") as f:
-    # vec = np.fromfile(f, dtype=np.float32)
+with open(file_path, "rb") as f:
+    vec = np.fromfile(f, dtype=np.float32)
 
 # preamble_voltages = -1 * np.ones(int(fs * t))
 
@@ -37,5 +36,5 @@ time = np.arange(len(data)) / samp_rate
 plt.figure()
 # plt.plot(corr, label='signal')
 # plt.plot(peaks, corr[peaks], "x", color = 'r', label='detected_peaks')
-plt.plot(time, data)
+plt.plot(vec)
 plt.show()

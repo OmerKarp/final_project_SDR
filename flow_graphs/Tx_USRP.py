@@ -10,6 +10,7 @@
 
 from PyQt5 import Qt
 from gnuradio import qtgui
+from PyQt5 import QtCore
 from gnuradio import analog
 from gnuradio import blocks
 from gnuradio import gr
@@ -22,10 +23,12 @@ from argparse import ArgumentParser
 from gnuradio.eng_arg import eng_float, intx
 from gnuradio import eng_notation
 from gnuradio import ori_omer
+from gnuradio import uhd
+import time
 
 
 
-class ex_c(gr.top_block, Qt.QWidget):
+class Tx_USRP(gr.top_block, Qt.QWidget):
 
     def __init__(self):
         gr.top_block.__init__(self, "Not titled yet", catch_exceptions=True)
@@ -48,7 +51,7 @@ class ex_c(gr.top_block, Qt.QWidget):
         self.top_grid_layout = Qt.QGridLayout()
         self.top_layout.addLayout(self.top_grid_layout)
 
-        self.settings = Qt.QSettings("GNU Radio", "ex_c")
+        self.settings = Qt.QSettings("GNU Radio", "Tx_USRP")
 
         try:
             geometry = self.settings.value("geometry")
@@ -60,18 +63,58 @@ class ex_c(gr.top_block, Qt.QWidget):
         ##################################################
         # Variables
         ##################################################
-        self.time = time = 0.01
-        self.samp_rate = samp_rate = 32e3
+        self.t = t = 0.01
+        self.samp_rate = samp_rate = 48000
+        self.fc = fc = 50e6
+        self.Tx_gain = Tx_gain = 5
+        self.Rx_gain = Rx_gain = 5
 
         ##################################################
         # Blocks
         ##################################################
 
-        self.ori_omer_modulate_a_0 = ori_omer.modulate_a(time, samp_rate, 'hi omer')
-        self.ori_omer_demodulated_b_0 = ori_omer.demodulated_b(time, samp_rate, 0.3, 1)
+        self._fc_range = qtgui.Range(10e3, 100e6, 1, 50e6, 200)
+        self._fc_win = qtgui.RangeWidget(self._fc_range, self.set_fc, "'fc'", "counter_slider", float, QtCore.Qt.Horizontal)
+        self.top_layout.addWidget(self._fc_win)
+        self._Tx_gain_range = qtgui.Range(0, 30, 1, 5, 200)
+        self._Tx_gain_win = qtgui.RangeWidget(self._Tx_gain_range, self.set_Tx_gain, "'Tx_gain'", "counter_slider", float, QtCore.Qt.Horizontal)
+        self.top_layout.addWidget(self._Tx_gain_win)
+        self._Rx_gain_range = qtgui.Range(0, 20, 1, 5, 200)
+        self._Rx_gain_win = qtgui.RangeWidget(self._Rx_gain_range, self.set_Rx_gain, "'Rx_gain'", "counter_slider", float, QtCore.Qt.Horizontal)
+        self.top_layout.addWidget(self._Rx_gain_win)
+        self.uhd_usrp_source_0 = uhd.usrp_source(
+            ",".join(("", '')),
+            uhd.stream_args(
+                cpu_format="fc32",
+                args='',
+                channels=list(range(0,1)),
+            ),
+        )
+        self.uhd_usrp_source_0.set_samp_rate(samp_rate)
+        self.uhd_usrp_source_0.set_time_unknown_pps(uhd.time_spec(0))
+
+        self.uhd_usrp_source_0.set_center_freq(fc, 0)
+        self.uhd_usrp_source_0.set_antenna("RX2", 0)
+        self.uhd_usrp_source_0.set_gain(Rx_gain, 0)
+        self.uhd_usrp_sink_0 = uhd.usrp_sink(
+            ",".join(("", '')),
+            uhd.stream_args(
+                cpu_format="fc32",
+                args='',
+                channels=list(range(0,1)),
+            ),
+            "",
+        )
+        self.uhd_usrp_sink_0.set_samp_rate(samp_rate)
+        self.uhd_usrp_sink_0.set_time_unknown_pps(uhd.time_spec(0))
+
+        self.uhd_usrp_sink_0.set_center_freq(fc, 0)
+        self.uhd_usrp_sink_0.set_antenna("TX/RX", 0)
+        self.uhd_usrp_sink_0.set_gain(Tx_gain, 0)
+        self.ori_omer_modulate_a_0 = ori_omer.modulate_a(t, samp_rate, 'hi omer')
+        self.ori_omer_demodulated_b_0 = ori_omer.demodulated_b(t, samp_rate, 0.3, 1)
         self.blocks_throttle2_0 = blocks.throttle( gr.sizeof_float*1, samp_rate, True, 0 if "auto" == "auto" else max( int(float(0.1) * samp_rate) if "auto" == "time" else int(0.1), 1) )
         self.blocks_multiply_const_vxx_0 = blocks.multiply_const_ff(4)
-        self.blocks_add_xx_0 = blocks.add_vcc(1)
         self.analog_wfm_tx_0 = analog.wfm_tx(
         	audio_rate=int(samp_rate),
         	quad_rate=(int(samp_rate*4)),
@@ -83,34 +126,32 @@ class ex_c(gr.top_block, Qt.QWidget):
         	quad_rate=(int(samp_rate*4)),
         	audio_decimation=4,
         )
-        self.analog_noise_source_x_0 = analog.noise_source_c(analog.GR_GAUSSIAN, 1, 0)
 
 
         ##################################################
         # Connections
         ##################################################
-        self.connect((self.analog_noise_source_x_0, 0), (self.blocks_add_xx_0, 1))
         self.connect((self.analog_wfm_rcv_0, 0), (self.blocks_multiply_const_vxx_0, 0))
-        self.connect((self.analog_wfm_tx_0, 0), (self.blocks_add_xx_0, 0))
-        self.connect((self.blocks_add_xx_0, 0), (self.analog_wfm_rcv_0, 0))
+        self.connect((self.analog_wfm_tx_0, 0), (self.uhd_usrp_sink_0, 0))
         self.connect((self.blocks_multiply_const_vxx_0, 0), (self.ori_omer_demodulated_b_0, 0))
         self.connect((self.blocks_throttle2_0, 0), (self.analog_wfm_tx_0, 0))
         self.connect((self.ori_omer_modulate_a_0, 0), (self.blocks_throttle2_0, 0))
+        self.connect((self.uhd_usrp_source_0, 0), (self.analog_wfm_rcv_0, 0))
 
 
     def closeEvent(self, event):
-        self.settings = Qt.QSettings("GNU Radio", "ex_c")
+        self.settings = Qt.QSettings("GNU Radio", "Tx_USRP")
         self.settings.setValue("geometry", self.saveGeometry())
         self.stop()
         self.wait()
 
         event.accept()
 
-    def get_time(self):
-        return self.time
+    def get_t(self):
+        return self.t
 
-    def set_time(self, time):
-        self.time = time
+    def set_t(self, t):
+        self.t = t
 
     def get_samp_rate(self):
         return self.samp_rate
@@ -118,11 +159,35 @@ class ex_c(gr.top_block, Qt.QWidget):
     def set_samp_rate(self, samp_rate):
         self.samp_rate = samp_rate
         self.blocks_throttle2_0.set_sample_rate(self.samp_rate)
+        self.uhd_usrp_sink_0.set_samp_rate(self.samp_rate)
+        self.uhd_usrp_source_0.set_samp_rate(self.samp_rate)
+
+    def get_fc(self):
+        return self.fc
+
+    def set_fc(self, fc):
+        self.fc = fc
+        self.uhd_usrp_sink_0.set_center_freq(self.fc, 0)
+        self.uhd_usrp_source_0.set_center_freq(self.fc, 0)
+
+    def get_Tx_gain(self):
+        return self.Tx_gain
+
+    def set_Tx_gain(self, Tx_gain):
+        self.Tx_gain = Tx_gain
+        self.uhd_usrp_sink_0.set_gain(self.Tx_gain, 0)
+
+    def get_Rx_gain(self):
+        return self.Rx_gain
+
+    def set_Rx_gain(self, Rx_gain):
+        self.Rx_gain = Rx_gain
+        self.uhd_usrp_source_0.set_gain(self.Rx_gain, 0)
 
 
 
 
-def main(top_block_cls=ex_c, options=None):
+def main(top_block_cls=Tx_USRP, options=None):
 
     qapp = Qt.QApplication(sys.argv)
 

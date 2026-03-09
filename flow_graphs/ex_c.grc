@@ -62,7 +62,7 @@ blocks:
   parameters:
     affinity: ''
     alias: ''
-    amp: '10'
+    amp: '1'
     comment: ''
     maxoutbuf: '0'
     minoutbuf: '0'
@@ -148,7 +148,7 @@ blocks:
     bus_structure: null
     coordinate: [1072, 24.0]
     rotation: 0
-    state: enabled
+    state: disabled
 - name: blocks_multiply_const_vxx_0
   id: blocks_multiply_const_vxx
   parameters:
@@ -214,7 +214,7 @@ blocks:
     fs: samp_rate
     maxoutbuf: '0'
     minoutbuf: '0'
-    msg: hi omer this is ori
+    msg: hi omer
     t: time
   states:
     bus_sink: false
